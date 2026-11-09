@@ -31,11 +31,14 @@ public partial class MainWindow : Window
     private const double BaseExpandedHeight = 480;
     private const double BasePeekHeight = 104;
 
+    private static readonly TimeSpan AutoCollapseDelay = TimeSpan.FromSeconds(10);
+
     private readonly MainViewModel _viewModel;
     private readonly AppSettings _settings;
     private readonly DispatcherTimer _peekTimer;
     private readonly DispatcherTimer _inlineTimer;
     private readonly DispatcherTimer _hoverTimer;
+    private readonly DispatcherTimer _autoCollapseTimer;
     private readonly Queue<NotificationItem> _notificationQueue = new();
 
     private IslandState _state = IslandState.Compact;
@@ -76,6 +79,12 @@ public partial class MainWindow : Window
                 Expand();
         };
 
+        _autoCollapseTimer = new DispatcherTimer(DispatcherPriority.Normal)
+        {
+            Interval = AutoCollapseDelay
+        };
+        _autoCollapseTimer.Tick += OnAutoCollapseTick;
+
         _viewModel.ExpandRequested += Expand;
         _viewModel.CollapseRequested += Collapse;
         _viewModel.NotificationArrived += OnNotificationArrived;
@@ -86,6 +95,10 @@ public partial class MainWindow : Window
         DpiChanged += (_, _) => ApplyLayout(false);
         MouseEnter += OnWindowMouseEnter;
         MouseLeave += OnWindowMouseLeave;
+        MouseMove += OnWindowMouseMove;
+        PreviewMouseDown += OnWindowPreviewMouseDown;
+        PreviewMouseWheel += OnWindowPreviewMouseWheel;
+        PreviewKeyDown += OnWindowPreviewKeyDown;
         Closing += OnWindowClosing;
         Closed += OnWindowClosed;
     }
@@ -100,6 +113,9 @@ public partial class MainWindow : Window
 
         Topmost = true;
         ApplyLayout(false);
+
+        if (_state == IslandState.Expanded)
+            RestartAutoCollapse();
     }
 
     public void ToggleIsland()
@@ -122,16 +138,21 @@ public partial class MainWindow : Window
         _notificationQueue.Clear();
 
         if (_state == IslandState.Expanded)
+        {
+            RestartAutoCollapse();
             return;
+        }
 
         _state = IslandState.Expanded;
         _viewModel.IsExpanded = true;
         SetContentVisibility(IslandState.Expanded);
         ApplyLayout(true);
+        RestartAutoCollapse();
     }
 
     public void Collapse()
     {
+        StopAutoCollapse();
         _peekTimer.Stop();
         _inlineTimer.Stop();
         InlineBanner.Visibility = Visibility.Collapsed;
@@ -376,6 +397,7 @@ public partial class MainWindow : Window
         _showingPeek = true;
         _viewModel.SetPeekNotification(item);
 
+        StopAutoCollapse();
         _state = IslandState.Peek;
         SetContentVisibility(IslandState.Peek);
         ApplyLayout(true);
@@ -388,6 +410,7 @@ public partial class MainWindow : Window
     private void DismissPeek(bool expand = false)
     {
         _peekTimer.Stop();
+        StopAutoCollapse();
 
         if (expand)
         {
@@ -425,6 +448,7 @@ public partial class MainWindow : Window
         _inlineTimer.Stop();
         _inlineTimer.Interval = TimeSpan.FromSeconds(_settings.NotificationDurationSeconds);
         _inlineTimer.Start();
+        RestartAutoCollapse();
     }
 
     private void CompactRoot_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -453,6 +477,8 @@ public partial class MainWindow : Window
 
     private void OnWindowMouseEnter(object sender, MouseEventArgs e)
     {
+        RestartAutoCollapse();
+
         if (!_settings.HoverToExpand || _state != IslandState.Compact || _showingPeek)
             return;
 
@@ -460,7 +486,66 @@ public partial class MainWindow : Window
         _hoverTimer.Start();
     }
 
-    private void OnWindowMouseLeave(object sender, MouseEventArgs e) => _hoverTimer.Stop();
+    private void OnWindowMouseLeave(object sender, MouseEventArgs e)
+    {
+        _hoverTimer.Stop();
+        RestartAutoCollapse();
+    }
+
+    private void OnWindowMouseMove(object sender, MouseEventArgs e) => RestartAutoCollapse();
+
+    private void OnWindowPreviewMouseDown(object sender, MouseButtonEventArgs e) => RestartAutoCollapse();
+
+    private void OnWindowPreviewMouseWheel(object sender, MouseWheelEventArgs e) => RestartAutoCollapse();
+
+    private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e) => RestartAutoCollapse();
+
+    private void RestartAutoCollapse()
+    {
+        if (_state != IslandState.Expanded || _isHiddenForFullscreen)
+            return;
+
+        _autoCollapseTimer.Stop();
+        _autoCollapseTimer.Start();
+    }
+
+    private void StopAutoCollapse() => _autoCollapseTimer.Stop();
+
+    private void OnAutoCollapseTick(object? sender, EventArgs e)
+    {
+        _autoCollapseTimer.Stop();
+
+        if (_state != IslandState.Expanded || _isHiddenForFullscreen)
+            return;
+
+        // Do not collapse in the middle of choosing a value from a drop-down.
+        // Any real input (mouse move, click, wheel or key) restarts the countdown.
+        if (HasOpenComboBox(this))
+        {
+            _autoCollapseTimer.Start();
+            return;
+        }
+
+        Collapse();
+    }
+
+    private static bool HasOpenComboBox(DependencyObject root)
+    {
+        if (root is System.Windows.Controls.ComboBox { IsDropDownOpen: true })
+            return true;
+
+        if (root is not Visual)
+            return false;
+
+        var count = VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < count; i++)
+        {
+            if (HasOpenComboBox(VisualTreeHelper.GetChild(root, i)))
+                return true;
+        }
+
+        return false;
+    }
 
     private void UpdateFullscreenWatcher()
     {
@@ -584,6 +669,7 @@ public partial class MainWindow : Window
         _peekTimer.Stop();
         _inlineTimer.Stop();
         _hoverTimer.Stop();
+        _autoCollapseTimer.Stop();
 
         UnregisterHotkeys();
         _source?.RemoveHook(WndProc);

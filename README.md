@@ -15,6 +15,7 @@ A compact, animated pill docked at the top-center of your screen that expands on
 - **Timers and stopwatch** — quick presets, custom minutes, multiple countdowns and a stopwatch
 - **System stats** — CPU, RAM, battery and network throughput, sampled only while the Stats tab is open
 - **Smooth expand/collapse animations** — GPU-composited WPF animations on the compact pill
+- **Auto-collapse** — the expanded island returns to the compact pill 10 seconds after you stop interacting with it
 - **Fullscreen-aware** — hides itself in games, videos and presentations and returns when you exit
 - **Multi-monitor support** — pick the display, offset from the top and scale the island
 - **Themes** — Dark, Light and Aurora, with adjustable opacity and scale
@@ -68,6 +69,7 @@ The output lands in `publish/`.
 | Action | How |
 | --- | --- |
 | Expand / collapse | Click the pill, press `Ctrl+Alt+D`, or use the tray menu |
+| Auto-collapse | The expanded island collapses 10 seconds after you stop interacting with it |
 | Play / pause | `Ctrl+Alt+M` |
 | Start a 5-minute timer | `Ctrl+Alt+T` |
 | Open settings | Tray menu → Settings, or the Settings tab |
