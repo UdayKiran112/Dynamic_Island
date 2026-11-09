@@ -2,7 +2,7 @@
 
 A lightweight, resource-efficient Dynamic Island for Windows 10/11.
 
-A compact, animated pill docked at the top-center of your screen that expands on demand to show what matters, then gets out of the way.
+A sleek, pill-shaped island that stays out of sight until you hover near the top-center of your screen, expands on demand to show what matters, and fades away when you move on.
 
 ![status](https://img.shields.io/badge/platform-Windows%2010%20%2F%2011-0078D4)
 ![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)
@@ -14,7 +14,10 @@ A compact, animated pill docked at the top-center of your screen that expands on
 - **Notifications** — Windows toast notifications (when the notification-listener capability is available) plus an in-island alert API for scripts and tools
 - **Timers and stopwatch** — quick presets, custom minutes, multiple countdowns and a stopwatch
 - **System stats** — CPU, RAM, battery and network throughput, sampled only while the Stats tab is open
-- **Smooth expand/collapse animations** — GPU-composited WPF animations on the compact pill
+- **Hover to reveal** — hidden by default; glide into the activation zone at the top-center and the island fades in
+- **Pill-shaped design** — a fully rounded, elongated pill with soft corners and a subtle glass highlight
+- **Smooth animations** — fade-in/fade-out plus fluid expansion and collapse transitions
+- **Live clock** — a real-time `HH:MM:SS` clock with tabular figures so the seconds never jitter the layout
 - **Auto-collapse** — the expanded island returns to the compact pill 10 seconds after you stop interacting with it
 - **Fullscreen-aware** — hides itself in games, videos and presentations and returns when you exit
 - **Multi-monitor support** — pick the display, offset from the top and scale the island
@@ -26,7 +29,7 @@ A compact, animated pill docked at the top-center of your screen that expands on
 
 - Native stack, no Electron, no bundled browser engine
 - Event-driven updates (GSMTC events, WinEvent foreground hooks, low-frequency safety checks)
-- Idle CPU close to 0% — the stats sampler and the clock are the only background timers
+- Idle CPU close to 0% — only the clock, the stats sampler and a lightweight 100 ms cursor watcher run in the background
 - GPU-accelerated animations only while the island is active
 - Small single-file, framework-dependent build (the .NET 8 desktop runtime is required)
 
@@ -68,6 +71,8 @@ The output lands in `publish/`.
 
 | Action | How |
 | --- | --- |
+| Reveal the island | Move the pointer into the top-center activation zone |
+| Hide the island | Move the pointer away from the island |
 | Expand / collapse | Click the pill, press `Ctrl+Alt+D`, or use the tray menu |
 | Auto-collapse | The expanded island collapses 10 seconds after you stop interacting with it |
 | Play / pause | `Ctrl+Alt+M` |

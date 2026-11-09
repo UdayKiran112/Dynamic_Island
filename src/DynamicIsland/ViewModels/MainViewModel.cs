@@ -287,7 +287,7 @@ public sealed class MainViewModel : ObservableObject
     private void UpdateClock()
     {
         var now = DateTime.Now;
-        ClockText = now.ToString("HH:mm");
+        ClockText = now.ToString("HH:mm:ss");
         CurrentDate = now.ToString("ddd, MMM d");
         if (!HasMedia)
             OnPropertyChanged(nameof(CompactSubtitle));

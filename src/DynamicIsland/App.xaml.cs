@@ -54,7 +54,7 @@ public partial class App : Application
 
         Island = new MainWindow(ViewModel, Settings);
         MainWindow = Island;
-        Island.Show();
+        Island.InitializeHidden();
 
         _tray = new TrayService(ViewModel, Island, ShutdownApp);
         _notifications.Start();
